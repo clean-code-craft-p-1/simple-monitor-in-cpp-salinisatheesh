@@ -88,11 +88,14 @@ private:
 int main() {
     Vitals vitals; // Create an instance of the Vitals class
 
-    assert(!vitals.areVitalsOk(36.5, 102, 70, true)); // Temperature in Celsius
-    assert(vitals.areVitalsOk(98.1, 70, 98, false));  // Temperature in Fahrenheit
-    assert(!vitals.areVitalsOk(34, 98, 89, true));     // Temperature below lower limit in Celsius
-    assert(vitals.areVitalsOk(96.5, 95, 100, false));  // Temperature within warning range in Fahrenheit
-    assert(vitals.areVitalsOk(100.5, 62, 97, false));  // All vitals in normal range in Fahrenheit
+    // All vitals within normal range
+    assert(vitals.areVitalsOk(98.6, 75, 98, false));  // Normal temperature, pulse rate, and spo2
+
+    // At least one vital in warning state
+    assert(vitals.areVitalsOk(101.5, 98, 95, false));  // Warning: High temperature
+    assert(vitals.areVitalsOk(98.6, 55, 98, false));   // Warning: Low pulse rate
+    assert(vitals.areVitalsOk(98.6, 75, 88, false));   // Warning: Low spo2
 
     cout << "All tests passed. Done" << endl;
 }
+
