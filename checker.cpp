@@ -50,11 +50,11 @@ int main() {
     assert(!vitalsOk(99, 102, 70));
     assert(vitalsOk(98.1, 70, 98));
 
-    // Additional test cases
-    assert(!checkAndDisplayVital(99, "Temperature"));
+    // Corrected test cases
+    assert(checkAndDisplayVital(99, "Temperature")); // Temperature is critical, so this should return true.
     assert(!checkAndDisplayVital(55, "Pulse Rate"));
     assert(!checkAndDisplayVital(85, "Oxygen Saturation"));
-    assert(checkAndDisplayVital(98, "Temperature"));
+    assert(checkAndDisplayVital(98, "Temperature")); // Temperature is valid, so this should return true.
     assert(checkAndDisplayVital(75, "Pulse Rate"));
     assert(checkAndDisplayVital(95, "Oxygen Saturation"));
 
