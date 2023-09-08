@@ -1,62 +1,98 @@
 #include <iostream>
 #include <cassert>
 #include <unistd.h>
+#include <map>
 using namespace std;
 
-// Function to display an animated message
-void animateMessage(const string& message) {
-    for (int i = 0; i < 6; i++) {
-        cout << "\r" << message << " " << flush;
-        sleep(1);
-        cout << "\r" << string(message.length(), ' ') << flush;
-        sleep(1);
+// Vitals boundary structure
+struct VitalBoundary {
+    float lowerCelsius;    // Lower boundary in Celsius
+    float upperCelsius;    // Upper boundary in Celsius
+    float lowerFahrenheit; // Lower boundary in Fahrenheit
+    float upperFahrenheit; // Upper boundary in Fahrenheit
+    string condition;      // Condition message
+};
+
+// Function to convert Celsius to Fahrenheit
+float celsiusToFahrenheit(float celsius) {
+    return (celsius * 9.0 / 5.0) + 32.0;
+}
+
+// Vitals class to encapsulate vitals-related logic
+class Vitals {
+public:
+    Vitals() {
+        // Map vitals to their boundaries and conditions
+        vitalsMap = {
+            {"Temperature", {35.0, 39.0, celsiusToFahrenheit(95.0), celsiusToFahrenheit(102.0), "Normal"}},
+            {"PulseRate", {60.0, 100.0, 60.0, 100.0, "Normal"}},
+            {"Spo2", {90.0, 100.0, 90.0, 100.0, "Normal"}},
+        };
     }
-}
 
-// Pure function to check temperature
-bool isTemperatureOk(float temperature) {
-    return temperature >= 95 && temperature <= 102;
-}
+    // Function to get the condition based on a vital value
+    string getCondition(float value, const string& vitalName, bool isCelsius) {
+        if (vitalsMap.find(vitalName) != vitalsMap.end()) {
+            const VitalBoundary& boundary = vitalsMap[vitalName];
+            float lower = isCelsius ? boundary.lowerCelsius : boundary.lowerFahrenheit;
+            float upper = isCelsius ? boundary.upperCelsius : boundary.upperFahrenheit;
 
-// Pure function to check pulse rate
-bool isPulseRateOk(float pulseRate) {
-    return pulseRate >= 60 && pulseRate <= 100;
-}
-
-// Pure function to check oxygen saturation
-bool isSpo2Ok(float spo2) {
-    return spo2 >= 90;
-}
-
-// Function to check and display vital status
-bool checkAndDisplayVital(float value, const string& vitalName) {
-    if (!value) {
-        animateMessage(vitalName + " critical!");
-        return false;
+            if (value < lower) {
+                return "Below " + boundary.condition;
+            } else if (value >= lower && value <= upper) {
+                float upperWarning = upper + (upper * 0.015); // 1.5% tolerance
+                if (value <= upperWarning) {
+                    return boundary.condition;
+                } else {
+                    return "Warning: " + boundary.condition;
+                }
+            } else {
+                return "Above " + boundary.condition;
+            }
+        }
+        return "Unknown Vital";
     }
-    return true;
-}
 
-// Function to check overall vitals
-bool vitalsOk(float temperature, float pulseRate, float spo2) {
-    bool temperatureOk = isTemperatureOk(temperature);
-    bool pulseRateOk = isPulseRateOk(pulseRate);
-    bool spo2Ok = isSpo2Ok(spo2);
+    // Function to check overall vitals
+    bool areVitalsOk(float temperature, float pulseRate, float spo2, bool isCelsius) {
+        string tempCondition = getCondition(temperature, "Temperature", isCelsius);
+        string pulseCondition = getCondition(pulseRate, "PulseRate", false); // Pulse rate is always in BPM.
+        string spo2Condition = getCondition(spo2, "Spo2", false);
 
-    return temperatureOk && pulseRateOk && spo2Ok;
-}
+        cout << "Temperature: " << temperature << " " << (isCelsius ? "Celsius" : "Fahrenheit") << " - " << tempCondition << endl;
+        cout << "Pulse Rate: " << pulseRate << " BPM - " << pulseCondition << endl;
+        cout << "Oxygen Saturation: " << spo2 << " % - " << spo2Condition << endl;
+
+        // Check overall vitals based on conditions
+        if (tempCondition == "Normal" && pulseCondition == "Normal" && spo2Condition == "Normal") {
+            return true;
+        } else if (tempCondition == "Warning: Normal" && pulseCondition == "Warning: Normal" && spo2Condition == "Warning: Normal") {
+            // Handle warning conditions (all in warning)
+            cout << "Warning: All vitals in warning state." << endl;
+            return true;
+        } else if (tempCondition.find("Below") != string::npos || pulseCondition.find("Below") != string::npos || spo2Condition.find("Below") != string::npos) {
+            // Handle error conditions (at least one below normal)
+            cout << "Error: At least one vital is below normal." << endl;
+            return false;
+        } else {
+            // Handle other error conditions (not covered above)
+            cout << "Error: Multiple vitals in abnormal state." << endl;
+            return false;
+        }
+    }
+
+private:
+    map<string, VitalBoundary> vitalsMap;
+};
 
 int main() {
-    assert(!vitalsOk(99, 102, 70));
-    assert(vitalsOk(98.1, 70, 98));
+    Vitals vitals; // Create an instance of the Vitals class
 
-   
-    assert(checkAndDisplayVital(99, "Temperature")); // Temperature is critical, so this should return true.
-    assert(checkAndDisplayVital(55, "Pulse Rate"));
-    assert(checkAndDisplayVital(85, "Oxygen Saturation"));
-    assert(checkAndDisplayVital(98, "Temperature")); // Temperature is valid, so this should return true.
-    assert(checkAndDisplayVital(75, "Pulse Rate"));
-    assert(checkAndDisplayVital(95, "Oxygen Saturation"));
+    assert(!vitals.areVitalsOk(36.5, 102, 70, true)); // Temperature in Celsius
+    assert(vitals.areVitalsOk(98.1, 70, 98, false));  // Temperature in Fahrenheit
+    assert(!vitals.areVitalsOk(34, 98, 89, true));     // Temperature below lower limit in Celsius
+    assert(vitals.areVitalsOk(96.5, 95, 100, false));  // Temperature within warning range in Fahrenheit
+    assert(vitals.areVitalsOk(100.5, 62, 97, false));  // All vitals in normal range in Fahrenheit
 
-    cout << "All tests passed. Done\n";
+    cout << "All tests passed. Done" << endl;
 }

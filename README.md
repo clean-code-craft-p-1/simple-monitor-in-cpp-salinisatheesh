@@ -46,3 +46,10 @@ Shorten the Semantic distance
 - Functional to express relation between input and output
 - Object oriented to encapsulate state with actions
 - Apect oriented to capture repeating aspects
+
+## Extensions and Improvements
+
+I have made several extensions and improvements to the original code to enhance its functionality and readability:
+
+1. **Support for Celsius and Fahrenheit**: The code now supports temperature measurements in both Celsius and Fahrenheit. It uses a conversion function to handle the unit conversions and expresses the units along with the measurements.
+2. **Early Warnings**: Early warnings are provided when vital parameters are near the upper or lower limits. A 1.5% tolerance is introduced for early warnings.
